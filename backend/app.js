@@ -15,7 +15,7 @@ ioapp.get('/products/', (req, res, next) => {
   next();
 });
 ioapp.get('/products/:id', (req, res, next) => {
-  res.json( {name: 'Vasaló', price: 22000} );
+  res.send( {name: 'Vasaló', price: 22000} );
 });
 
 // view engine setup

@@ -56,12 +56,16 @@ module.exports =  class eio {
 
     crud(type, msg, socket) {
         try {
-            msg = JSON.parse(msg);
+            if (typeof msg === 'string') {
+                msg = JSON.parse(msg);
+            }
         } catch(e) {
             console.error(e);
             return;
         }
         
+        msg.type = type;
+
         msg.matchedList = this.middleWares[type].filter(middleware => {
             return new UrlPattern(middleware.url).match(msg.url);
         });
@@ -93,10 +97,14 @@ class EIOResponse {
         this.socket = socket;
         this.middleware = middleware;
         this.url = this.msg.url;
+        this.type = this.msg.type;
     }
 
     send(responseContent) {
-        this.socket.emit(this.url, responseContent);
+        this.socket.emit(this.type, {
+            url: this.url,
+            data: responseContent
+        });
     }
 
     json(responseContent) {
