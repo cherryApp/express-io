@@ -9,12 +9,13 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var app = express();
-var sapp = new eio(3001);
-sapp.get('/products/*', (req, res, next) => {
-  
+var ioapp = new eio(3001);
+ioapp.get('/products/', (req, res, next) => {
+  res.send('Hello');
+  next();
 });
-sapp.get('/products/:id', (req, res, next) => {
-  
+ioapp.get('/products/:id', (req, res, next) => {
+  res.json( {name: 'Vasaló', price: 22000} );
 });
 
 // view engine setup

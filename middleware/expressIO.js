@@ -17,16 +17,16 @@ module.exports =  class eio {
 
         this.io.on('connection', (socket) => {
             socket.on('get', (msg) => {
-                this.crud('get', msg);
+                this.crud('get', msg, socket);
             });
             socket.on('put', (msg) => {
-                this.crud('put', msg);
+                this.crud('put', msg, socket);
             });
             socket.on('post', (msg) => {
-                this.crud('post', msg);
+                this.crud('post', msg, socket);
             });
             socket.on('delete', (msg) => {
-                this.crud('delete', msg);
+                this.crud('delete', msg, socket);
             });
         });
     }
@@ -54,11 +54,7 @@ module.exports =  class eio {
         this.pushToMiddleware('delete', url, callBack);
     }
 
-    next() {
-
-    }
-
-    crud(type, msg) {
+    crud(type, msg, socket) {
         try {
             msg = JSON.parse(msg);
         } catch(e) {
@@ -70,7 +66,54 @@ module.exports =  class eio {
             return new UrlPattern(middleware.url).match(msg.url);
         });
 
-        this.next();
-        
+        msg.currentIndex = 0;
+        msg.next = () => {
+            let currentMiddleWare = msg.matchedList[msg.currentIndex];
+            if (currentMiddleWare) {
+                msg.currentIndex++;
+                currentMiddleWare.callBack(
+                    currentMiddleWare.req, 
+                    currentMiddleWare.res, 
+                    msg.next
+                );                        
+            }
+        };
+        msg.matchedList.forEach( (middleware) => {
+            middleware.req = new EIORequest(msg, socket, middleware);
+            middleware.res = new EIOResponse(msg, socket, middleware);
+        });
+
+        msg.next();
+    }
+}
+
+class EIOResponse {
+    constructor(msg, socket, middleware) {
+        this.msg = msg;
+        this.socket = socket;
+        this.middleware = middleware;
+        this.url = this.msg.url;
+    }
+
+    send(responseContent) {
+        this.socket.emit(this.url, responseContent);
+    }
+
+    json(responseContent) {
+        try {
+            responseContent = JSON.stringify(responseContent);
+        } catch (e) {
+            console.error(e);
+        }
+        this.socket.emit(this.url, responseContent);
+    }
+}
+
+class EIORequest {
+    constructor(msg, socket, middleware) {
+        this.msg = msg;
+        this.middleware = middleware;
+        this.url = this.msg.url;
+        this.params = new UrlPattern(this.middleware.url).match(this.msg.url);
     }
 }
